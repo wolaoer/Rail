@@ -100,7 +100,7 @@ def calculate_deceleration_distance(current_speed_kmh, next_speed_kmh, current_d
     combined_acceleration = acc + slope_acceleration
     speed_after_cut_acceleration = current_speed + combined_acceleration * cut_acceleration_delay
 
-    # 计算可用距离 TODO 这里有错
+    # 计算可用距离
     max_allowed_distance = current_distance - get_previous_limit_change_distance(current_distance)
 
     # Calculate distance during cut acceleration delay
@@ -130,26 +130,43 @@ def calculate_deceleration_distance(current_speed_kmh, next_speed_kmh, current_d
         end_brake_delay_distance = int(current_distance - deceleration_distance)
         final_distance = int(current_distance)
 
-        # First segment: cut acceleration delay
-        for d in range(start_cut_acceleration_distance, end_cut_acceleration_distance):
-            if d >= 0 and d < len(speed_limits_minus_4):
-                # speed_limits_minus_4[d] = current_speed - combined_acceleration * (d - start_cut_acceleration_distance)
-                s = d - start_cut_acceleration_distance + 1
-                speed_limits_minus_4[d] = ms_to_kmh(np.sqrt(current_speed ** 2 + 2 * combined_acceleration * s))
 
-        # Second segment: brake establishment delay
-        for d in range(end_cut_acceleration_distance, end_brake_delay_distance):
+        # # First segment: cut acceleration delay
+        # for d in range(start_cut_acceleration_distance, end_cut_acceleration_distance):
+        #     def equation_first(v):
+        #         return ((v + 0.5) ** 2 - v ** 2) / (2 * acc) + (v + 0.5) * brake_delay + (
+        #                 (v + 0.5) ** 2 - next_speed ** 2) / (2 * brake_delay) - end_cut_acceleration_distance + d
+        #     if d >= 0 and d < len(speed_limits_minus_4):
+        #         # speed_limits_minus_4[d] = current_speed - combined_acceleration * (d - start_cut_acceleration_distance)
+        #         s = d - start_cut_acceleration_distance + 1
+        #         result = fsolve(equation_first, current_speed)
+        #         # speed_limits_minus_4[d] = ms_to_kmh(np.sqrt(current_speed ** 2 + 2 * combined_acceleration * s))
+        #         speed_limits_minus_4[d] = ms_to_kmh(result[0])
+        #
+        #
+        # # Second segment: brake establishment delay
+        # for d in range(end_cut_acceleration_distance, end_brake_delay_distance):
+        #     if d >= 0 and d < len(speed_limits_minus_4):
+        #         s = d - end_cut_acceleration_distance + 1
+        #         # speed_limits_minus_4[d] = speed_after_cut_acceleration - slope_acceleration * (d - end_cut_acceleration_distance)
+        #         speed_limits_minus_4[d] = ms_to_kmh(
+        #             np.sqrt(speed_after_cut_acceleration ** 2 + 2 * slope_acceleration * s))
+        # # Third segment: deceleration
+        # for d in range(end_brake_delay_distance, final_distance):
+        #     if d >= 0 and d < len(speed_limits_minus_4):
+        #         # speed_limits_minus_4[d] = speed_after_brake_delay + total_deceleration * (d - end_brake_delay_distance)
+        #         s = d - end_brake_delay_distance + 1
+        #         speed_limits_minus_4[d] = ms_to_kmh(np.sqrt(speed_after_brake_delay ** 2 - 2 * total_deceleration * s))
+
+        for d in range(start_cut_acceleration_distance,final_distance):
+            def equation(v):
+                return ((v + 0.5) ** 2 - v ** 2) + (v + 0.5) * 0.7 + (
+                        (v + 0.5) ** 2 - next_speed ** 2) / 2.4 - final_distance + d + 1
             if d >= 0 and d < len(speed_limits_minus_4):
-                s = d - end_cut_acceleration_distance + 1
-                # speed_limits_minus_4[d] = speed_after_cut_acceleration - slope_acceleration * (d - end_cut_acceleration_distance)
-                speed_limits_minus_4[d] = ms_to_kmh(
-                    np.sqrt(speed_after_cut_acceleration ** 2 + 2 * slope_acceleration * s))
-        # Third segment: deceleration
-        for d in range(end_brake_delay_distance, final_distance):
-            if d >= 0 and d < len(speed_limits_minus_4):
-                # speed_limits_minus_4[d] = speed_after_brake_delay + total_deceleration * (d - end_brake_delay_distance)
-                s = d - end_brake_delay_distance + 1
-                speed_limits_minus_4[d] = ms_to_kmh(np.sqrt(speed_after_brake_delay ** 2 - 2 * total_deceleration * s))
+                result = fsolve(equation,current_speed)
+                speed_limits_minus_4[d] = ms_to_kmh(result[0])
+
+
         return total_distance
     else:
         def equation(v):
@@ -174,24 +191,30 @@ def calculate_deceleration_distance(current_speed_kmh, next_speed_kmh, current_d
         end_brake_delay_distance = end_cut_acceleration_distance + int(distance_during_brake_delay)
         final_distance = end_brake_delay_distance + int(deceleration_distance)
 
-        # First segment: cut acceleration delay
-        for d in range(start_cut_acceleration_distance, end_cut_acceleration_distance):
+        # # First segment: cut acceleration delay
+        # for d in range(start_cut_acceleration_distance, end_cut_acceleration_distance):
+        #     if d >= 0 and d < len(speed_limits_minus_4):
+        #         s = d - start_cut_acceleration_distance + 1
+        #         speed_limits_minus_4[d] = ms_to_kmh(np.sqrt(v_solution ** 2 + 2 * acc * s))
+        #
+        # # Second segment: brake establishment delay
+        # for d in range(end_cut_acceleration_distance, end_brake_delay_distance):
+        #     if d >= 0 and d < len(speed_limits_minus_4):
+        #         speed_limits_minus_4[d] = ms_to_kmh(speed_after_cut_acceleration)
+        #
+        # # Third segment: deceleration
+        # for d in range(end_brake_delay_distance, final_distance):
+        #     if d >= 0 and d < len(speed_limits_minus_4):
+        #         s = d - end_brake_delay_distance + 1
+        #         speed_limits_minus_4[d] = ms_to_kmh(
+        #             np.sqrt(speed_after_cut_acceleration ** 2 - 2 * total_deceleration * s))
+        for d in range(start_cut_acceleration_distance,final_distance):
+            def equation(v):
+                return ((v + 0.5) ** 2 - v ** 2) / (2 * acc) + (v + 0.5) * brake_delay + (
+                        (v + 0.5) ** 2 - next_speed ** 2) / (2 * brake_delay) - final_distance + d
             if d >= 0 and d < len(speed_limits_minus_4):
-                s = d - start_cut_acceleration_distance + 1
-                speed_limits_minus_4[d] = ms_to_kmh(np.sqrt(v_solution ** 2 + 2 * acc * s))
-
-        # Second segment: brake establishment delay
-        for d in range(end_cut_acceleration_distance, end_brake_delay_distance):
-            if d >= 0 and d < len(speed_limits_minus_4):
-                speed_limits_minus_4[d] = ms_to_kmh(speed_after_cut_acceleration)
-
-        # Third segment: deceleration
-        for d in range(end_brake_delay_distance, final_distance):
-            if d >= 0 and d < len(speed_limits_minus_4):
-                s = d - end_brake_delay_distance + 1
-                speed_limits_minus_4[d] = ms_to_kmh(
-                    np.sqrt(speed_after_cut_acceleration ** 2 - 2 * total_deceleration * s))
-
+                result = fsolve(equation, v_solution)
+                speed_limits_minus_4[d] = ms_to_kmh(result[0])
         return max_allowed_distance
 
 
